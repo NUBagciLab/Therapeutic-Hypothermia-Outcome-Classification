@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Therapeutic Hypothermia Outcome Predictions</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Lucida Sans', sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100vw;
+            height: 100vh;
+            overflow-y: auto;
+        }
+        .container {
+            width: 50%;
+            max-width: 600px;
+            margin: 20px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select, button {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border-color: #007bff;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .error-message {
+            color: #ff0000;
+            margin-top: 10px;
+        }
+        .title {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .prediction-section, .confidence-section, .input-details-section {
+            margin-bottom: 20px;
+        }
+        canvas {
+            margin: 0 auto;
+            display: block;
+            max-width: 100%;
+        }
+        #notification {
+            color: blue; /* Or any color you prefer */
+            padding: 10px;
+            margin-top: 10px;
+            display: none; /* Hide by default */
+        }
+    </style>
+    <script>
+    function showNotification() {
+        var notification = document.getElementById('notification');
+        notification.innerHTML = 'Scroll down for results';
+        notification.style.display = 'block';
+    }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>Therapeutic Hypothermia Outcome Predictions</h1>
+        <form action="/predict" method="post" onsubmit="showNotification()">
+            <div class="form-group">
+                <label for="GA">Gestation Age (weeks):</label>
+                <input type="text" id="GA" name="GA" required>
+            </div>
+            <div class="form-group">
+                <label for="creatinine">Creatinine:</label>
+                <input type="text" id="creatinine" name="creatinine" required>
+                <select id="creatinine_unit" name="creatinine_unit" required>
+                    <option value="mg/dL">mg/dL</option>
+                    <option value="µmol/L">µmol/L</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="PNA">Postnatal Age (days):</label>
+                <input type="text" id="PNA" name="PNA" required>
+            </div>
+            <div class="form-group">
+                <label for="BW">Body Weight (grams):</label>
+                <input type="text" id="BW" name="BW" required>
+            </div>
+            <button type="submit">Predict</button>
+        </form>
+    </div>
+
+    <div id="notification" class="container"></div> <!-- Notification will appear here -->
+
+    {% if prediction_text %}
+    <div class="container">
+        <div class="prediction-section">
+            <h2 class="title">Prediction:</h2>
+            <p>{{ prediction_text }}</p>
+        </div>
+        <div class="confidence-section">
+            <h2 class="title">Confidence:</h2>
+            <p>{{ confidence }}%</p>
+        </div>
+        <div class="input-details-section">
+            <h2 class="title">Input Details:</h2>
+            <p>GA (weeks): {{ user_input.GA }}</p>
+            <p>Creatinine: {{ user_input.creatinine }} {{ user_input.creatinine_unit }}</p>
+            <p>PNA (days): {{ user_input.PNA }}</p>
+            <p>BW (grams): {{ user_input.BW }}</p>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if error_message %}
+    <div class="container">
+        <p class="error-message">{{ error_message }}</p>
+    </div>
+    {% endif %}
+
+    {% if chart_data %}
+    <div class="container">
+        <canvas id="confidenceChart" width="400" height="400"></canvas>
+    </div>
+    <script>
+        var colors = [
+            'rgba(255, 99, 132, 0.2)',
+            'rgba(54, 162, 235, 0.2)',
+            'rgba(255, 206, 86, 0.2)',
+            'rgba(75, 192, 192, 0.2)',
+            'rgba(153, 102, 255, 0.2)'
+        ];
+        var borderColors = [
+            'rgba(255, 99, 132, 1)',
+            'rgba(54, 162, 235, 1)',
+            'rgba(255, 206, 86, 1)',
+            'rgba(75, 192, 192, 1)',
+            'rgba(153, 102, 255, 1)'
+        ];
+        var ctxBar = document.getElementById('confidenceChart').getContext('2d');
+        var chartData = {{ chart_data | safe }};
+        var confidenceChart = new Chart(ctxBar, {
+            type: 'bar',
+            data: {
+                labels: chartData.labels,
+                datasets: [{
+                    label: 'Confidence Levels',
+                    data: chartData.data,
+                    backgroundColor: colors,
+                    borderColor: borderColors,
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                }
+            }
+        });
+    </script>
+    </div>
+    {% endif %}
+</body>
+</html>
