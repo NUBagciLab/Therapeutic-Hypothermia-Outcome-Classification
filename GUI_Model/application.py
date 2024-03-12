@@ -9,6 +9,10 @@ with open('tuned_TH_model.pkl', 'rb') as f:
 
 app = Flask(__name__) 
 
+@app.route('/')
+def home():
+    return render_template('index.html')
+
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
